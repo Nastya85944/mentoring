@@ -1,32 +1,32 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Student;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-@Qualifier("studentServiceImpl")
-public class StudentServiceImpl implements StudentService{
+public class StudentServiceImpl implements StudentService {
+    private final StudentRepository studentRepository;
     @Autowired
-    private StudentRepository studentRepository;
-
-//    public StudentServiceImpl(StudentRepository studentRepository) {
-//        this.studentRepository = studentRepository;
-//    }
-
-    @Override
-    public Optional<Student> findById(Long studentId) {
-        return studentRepository.findById(studentId);
+    public StudentServiceImpl(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
     }
 
     @Override
-    public List<Student> getAllStudents() {
-        return studentRepository.findAll();
+    public Student findById(Long studentId) throws ResourceNotFoundException {
+        return studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id: " + studentId));
+    }
+
+    @Override
+    public Page<Student> getAllStudents(Pageable pageable) {
+        return studentRepository.findAll(pageable);
     }
 
     @Override
@@ -35,12 +35,19 @@ public class StudentServiceImpl implements StudentService{
     }
 
     @Override
-    public Student updateStudent(Student student) {
+    public Student updateStudent(Student studentDetails) throws ResourceNotFoundException {
+        Student student = studentRepository
+                .findById(studentDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id: " + studentDetails.getId()));
+        student.setFirstName(studentDetails.getFirstName());
+        student.setLastName(studentDetails.getLastName());
+        student.setEmail(studentDetails.getEmail());
         return studentRepository.save(student);
     }
 
     @Override
-    public void deleteStudent(Long studentId) {
-        studentRepository.deleteById(studentId);
+    public void deleteStudent(Long studentId) throws ResourceNotFoundException {
+        Student student = studentRepository.findById(studentId).orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + studentId));
+        studentRepository.deleteById(student.getId());
     }
 }

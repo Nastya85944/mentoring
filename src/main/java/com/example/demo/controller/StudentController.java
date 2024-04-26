@@ -6,16 +6,15 @@ import com.example.demo.service.StudentService;
 import com.example.demo.service.StudentServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1/students")
 public class StudentController {
 
-    @Qualifier("studentServiceImpl")
     private final StudentService studentService;
 
     @Autowired
@@ -23,34 +22,31 @@ public class StudentController {
         this.studentService = studentService;
     }
 
-    @GetMapping("/students/{id}")
+    @GetMapping("/{id}")
     public Student getStudentById(@PathVariable(value = "id") Long studentId) throws ResourceNotFoundException {
-        return studentService.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id: " + studentId));
+        return studentService.findById(studentId);
     }
 
-    @GetMapping("/students")
-    public List<Student> getAllStudents() {
-        return studentService.getAllStudents();
+    @GetMapping
+    public Page<Student> getAllStudents(@RequestParam(name = "page", defaultValue = "0") int page,
+                                        @RequestParam(name = "size", defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return studentService.getAllStudents(pageable);
     }
 
-    @PostMapping("/students")
+    @PostMapping
     public Student saveStudent(@RequestBody Student student) {
         return studentService.saveStudent(student);
     }
 
-    @PutMapping("/students/{id}")
-    public Student updateStudent(@Valid @RequestBody Student studentDetails, @PathVariable(value = "id") Long studentId) throws ResourceNotFoundException {
-        Student student = studentService.findById(studentId).orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id: " + studentId));
-        student.setFirstName(studentDetails.getFirstName());
-        student.setLastName(studentDetails.getLastName());
-        student.setEmail(studentDetails.getEmail());
-        return studentService.updateStudent(student);
+    @PutMapping
+    public Student updateStudent(@Valid @RequestBody Student studentDetails) throws ResourceNotFoundException {
+        return studentService.updateStudent(studentDetails);
     }
 
-    @DeleteMapping("/students/{id}")
+    @DeleteMapping("/{id}")
     public void deleteStudent(@PathVariable(value = "id") Long studentId) throws ResourceNotFoundException {
-        Student student = studentService.findById(studentId).orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + studentId));
-        studentService.deleteStudent(student.getId());
+        studentService.deleteStudent(studentId);
     }
 }
